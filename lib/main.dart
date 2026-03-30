@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:note_app/providers/auth_providers.dart';
 import 'package:note_app/providers/note_providers.dart';
-import 'package:note_app/screen/home_screen.dart';
+import 'package:note_app/screen/splash_screen.dart';
+import 'package:note_app/services/dio_client.dart';
 import 'package:note_app/services/note_repository.dart';
 import 'package:provider/provider.dart';
 
@@ -10,16 +12,15 @@ void main() async {
   
   // Initialize repository
   await NoteRepository().init();
+  await AuthProvider().init();
   
   final noteProvider = NoteProvider();
   await noteProvider.loadNotes();
   
-  runApp(
-    ChangeNotifierProvider.value(
-      value: noteProvider,
-      child: const MyApp(),
-    ),
-  );
+  // Init Dio
+  DioClient().init();
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -28,13 +29,23 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()..init()),  
+        ChangeNotifierProvider(
+          create: (_) => NoteProvider()..loadNotes(), // Load di sini
+          lazy: false, // Pastikan langsung diinisialisasi
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Note App',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF667EEA)),
+        ),
+        home: const SplashScreen(),
       ),
-      home: const HomeScreen(),
-      debugShowCheckedModeBanner: false,
     );
   }
 }
